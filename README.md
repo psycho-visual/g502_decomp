@@ -126,8 +126,12 @@ unknown; lift detection is a guess.
 
 1. **What do new G502 HERO units run?** G HUB only serves F-B for `046d:c08b`. Either new units
    run F-B too and refuse F-A for another reason (bootloader rollback/signature check, changed
-   hardware), or they enumerate differently and get firmware from one of the 148 encrypted G HUB
-   packages. Firmware version + VID:PID from a new unit would settle this.
+   hardware), or they enumerate differently. Firmware version + VID:PID from a new unit would
+   settle this. `tools/hidpp_version.py` reads exactly that from a plugged-in mouse (read-only,
+   over HID++ 2.0): run `pip install hidapi` then `python tools/hidpp_version.py`. It prints the
+   USB PID, the main-application firmware version (compare to F-A `U127.01_B0007` /
+   F-B `U127.03_B0010`), and the **bootloader** entity's version — a newer bootloader is the
+   prime suspect for why the old downgrade no longer works.
 2. **Encrypted G HUB packages** (magic `0x20210506`, AES-128 key ids served from
    `/pipeline/v2/access/<group>/content.json`) — the scheme isn't plain AES-CBC/CTR/GCM with
    those keys; needs more work in `logi_installer_shared.dll`.
