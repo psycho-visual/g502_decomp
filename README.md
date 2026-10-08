@@ -12,8 +12,14 @@ question: **why does firmware 127.03.10 add so much click-release latency compar
 
 ## TL;DR
 
-* F-A and F-B are the same program for the same hardware: **315 of 323 functions are
-  instruction-for-instruction identical**. Every real change is in button debouncing.
+* F-A and F-B are the same program for the same hardware. `tools/verify_changes.py` (content
+  diff, relocations masked) reports **11 of 323 functions changed**; one of those,
+  `FUN_0800ea78`, is byte-identical in F-B at a shifted address (a relocation artifact of the
+  content diff), leaving **10 real logic changes**. 8 of the 10 implement the new button
+  debounce / EXTI handling. The other 2 are unrelated: the sensor **max DPI cap was raised
+  16000 → 25600**, and one init constant changed 7 → 16 (purpose unconfirmed). The mnemonic-only
+  `tools/match_functions.py` is a weaker first pass and misses changed constants — use
+  `verify_changes.py` for the authoritative list.
 * F-A reports a release after **2 consecutive released samples** (~1–2 ms).
 * F-B reports a release only after a fixed 5 ms "is it really released?" wait **plus** an
   adaptive count of 4–20 samples, sized from how many contact-closing edges PC0/PC1 saw in the
@@ -75,7 +81,17 @@ b8f62a820cb3070c08870211b80ba329b8a8424a4f0e151d360214dd046855c6  F-A 127.01.07
 | `buttons_init` `08008164` | `080081e8` | Adds falling-edge EXTI interrupts on PC0/PC1 |
 | `FUN_080076b0` | `FUN_08007720` | Sleep/wake path re-enables those interrupts |
 | `buttons_process_events` `08008660` | `0800883c` | Per-button state grew from 2 to 6 bytes (stride change only) |
+| `buttons_state_reset` `08008270` | `08008308` | Same 2→6 byte stride; resets release threshold |
 | — | `EXTI_GetITStatus` `080046d8` | StdPeriph helper newly linked in |
+| — | `popcount32` `08008338` | Helper for the adaptive release threshold |
+
+Two further changes are **unrelated to debouncing** (missed by the mnemonic-only diff, found by
+comparing decompiled C with relocations masked):
+
+| F-A | F-B | What |
+|---|---|---|
+| `FUN_08007cbc` `08007cbc` | `08007d44` | Sensor resolution (CPI/DPI) programming (writes sensor regs 3/0x0c/0x0d, 50-CPI steps below 12800, 100 above). **Max DPI cap raised 16000 → 25600** (0x6400). |
+| `FUN_0800af40` `0800af40` | `0800b124` | One init constant changed 7 → 16 (writes `{0, 7}`→`{0, 16}`); write-only in the decompile, purpose unconfirmed. |
 
 (`0800ea50`/`0800ea78` in F-A are flash-status helpers that also exist byte-identical in F-B at
 `0800ec38`; Ghidra just didn't auto-detect them there.)
