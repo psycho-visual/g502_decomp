@@ -1,0 +1,6 @@
+# Logitech firmware binaries / installers are not redistributed; see README
+firmware/
+*.exe
+*.dfu
+*.depot
+__pycache__/

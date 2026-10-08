@@ -1,0 +1,14 @@
+# address name   (applied by ExportDecomp.java; names are our guesses unless noted)
+08006758 main
+080082a0 buttons_scan_debounce
+08008270 buttons_state_reset
+08008164 buttons_init
+08008660 buttons_process_events
+080079d4 sensor_poll_status
+08007f58 sensor_spi_xfer
+080080b0 tim9_init_2mhz
+0800b53c usb_sof_callback
+08004664 EXTI_Init
+080046d8 EXTI_ClearITPendingBit
+080049ec TIM_TimeBaseInit
+08004a6c TIM_Cmd
