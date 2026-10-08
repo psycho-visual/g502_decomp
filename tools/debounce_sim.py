@@ -24,8 +24,17 @@ class FA:
         self.press_thr = press_thr
         self.cnt = 0
         self.flags = 0
+        self.active = False                   # DAT_200008f6
 
     def tick(self, pressed, edge_flag=False):
+        if not pressed and not self.active:   # all buttons up and idle: loop skipped
+            return bool(self.flags & 1)
+        self._step(pressed)
+        self.active = self.cnt != 0 or self.flags != 0
+        self.flags &= ~2                      # "changed" bit consumed by buttons_process_events
+        return bool(self.flags & 1)
+
+    def _step(self, pressed):
         if self.cnt < 0:
             self.cnt += 1                     # lockout: input ignored
         elif pressed:
@@ -44,7 +53,6 @@ class FA:
                     self.cnt = -20
             else:
                 self.cnt = 0
-        return bool(self.flags & 1)
 
 
 class FB:
@@ -55,10 +63,19 @@ class FB:
         self.hist = 0                         # DAT_20000d60 / DAT_20000d68
         self.st = [0, 0, 0, 0, 0, 0]          # cnt, flags, p2, p3, p4, p5
         self.release_thr = 4
+        self.active = False                   # DAT_200008f6
 
     def tick(self, pressed, edge_flag=False):
         self.hist = ((self.hist << 1) | int(edge_flag)) & 0xFFFFFFFF
         self.release_thr = min((bin(self.hist).count('1') + 2) * 2, 20)
+        if not pressed and not self.active:   # all buttons up and idle: loop skipped
+            return bool(self.st[1] & 1)
+        self._step(pressed)
+        self.active = self.st[0] != 0 or self.st[1] != 0
+        self.st[1] &= ~2                      # "changed" bit consumed by buttons_process_events
+        return bool(self.st[1] & 1)
+
+    def _step(self, pressed):
         s = self.st
         cnt = s8(s[0])
         if pressed:
@@ -105,7 +122,6 @@ class FB:
                     s[5] = 1
             else:
                 s[0] = 0
-        return bool(s[1] & 1)
 
 
 def run(model, wave, ms):
